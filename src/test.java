@@ -1,34 +1,54 @@
-import javax.sound.sampled.*;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 
 public class test {
+    private JFrame loginFrame;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JLabel statusLabel;
+
+    public test() {
+        createLoginGUI();
+    }
+
+    private void createLoginGUI() {
+        loginFrame = new JFrame("Login");
+        loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loginFrame.setSize(300, 150);
+        loginFrame.setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2));
+        JLabel usernameLabel = new JLabel("             Username:");
+        usernameField = new JTextField();
+        JLabel passwordLabel = new JLabel("             Password:");
+        passwordField = new JPasswordField();
+
+        inputPanel.add(usernameLabel);
+        inputPanel.add(usernameField);
+        inputPanel.add(passwordLabel);
+        inputPanel.add(passwordField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton loginButton = new JButton("Login");
+
+        buttonPanel.add(loginButton);
+
+        statusLabel = new JLabel("", JLabel.CENTER);
+
+        loginFrame.add(inputPanel, BorderLayout.CENTER);
+        loginFrame.add(buttonPanel, BorderLayout.SOUTH);
+        loginFrame.add(statusLabel, BorderLayout.NORTH);
+
+        loginFrame.setLocationRelativeTo(null); // 将窗口居中显示
+        loginFrame.setVisible(true);
+    }
+
     public static void main(String[] args) {
-//        AudioFormat format = new AudioFormat(
-//                AudioFormat.Encoding.PCM_SIGNED, // 编码格式
-//                44100,                           // 采样率
-//                16,                              // 位深度
-//                2,                               // 声道数（立体声）
-//                4,                               // 每个样本帧字节数
-//                44100,                           // 每秒的样本帧数
-//                true);                           // 大端字节顺序（true表示大端，false表示小端）
-        try {
-            // 创建音频格式
-            AudioFormat format = new AudioFormat(16000, 16, 1, true, false);
-
-            // 获取音频输入设备
-            TargetDataLine line = AudioSystem.getTargetDataLine(format);
-            line.open(format);
-            line.start();
-            System.out.println("2222222222222222");
-            line.stop();
-            line.close();
-        }catch (LineUnavailableException e) {
-            e.printStackTrace();
-        } finally {
-            // 关闭音频输入设备和输出流
-
-        }
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new test();
+            }
+        });
     }
 }
-

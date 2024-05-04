@@ -52,9 +52,6 @@ public class Server {
                 } else {
                     out.println("Authentication failed");
                     System.out.println("Authentication failed for client: " + clientSocket);
-                    // 关闭连接
-                    stopConnection();
-                    return;
                 }
 
                 // 等待客户端通信
@@ -92,7 +89,7 @@ public class Server {
                         String fileName = parts[1];
                         long fileSize = Long.parseLong(parts[2]);
                         //String fileName = message.substring(5);
-                        System.out.println("File:" + fileName);
+                        System.out.println("File:" + fileName + fileSize);
                         receiveFile(fileName,fileSize);
                     } else if (message.startsWith("Audio:")) {
                         String audioname = message.substring(5);
@@ -193,7 +190,7 @@ public class Server {
         public void sendFile(String fileName, byte[] fileData) {
             try {
                 // 发送文件名
-                out.println("File:" + fileName);
+                out.println("File:" + fileName+":"+fileData.length);
                 out.flush();
 
                 // 发送文件内容
@@ -215,14 +212,14 @@ public class Server {
         private boolean authenticateUser(String username, String password) {
             // 在实际情况下，你需要在这里编写验证用户信息的逻辑
             // 这里只是一个简单的示例，始终返回true，表示认证成功
-//            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
-//                    return true;
-//            }
-//            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
-//                return true;
-//            }
-
-            return true;
+            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
+                    return true;
+            }
+            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
+                return true;
+            }
+            return false;
+            //return true;
         }
         private void sendMessage(String message) {
             out.println("Text:"+message);

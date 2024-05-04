@@ -17,8 +17,12 @@ public class Client {
     private JFrame loginFrame;
     private JTextField usernameField;
     private JPasswordField passwordField;
+    private JLabel statusLabel;
     private int audiocount;
+    private boolean isLoading;
+    private boolean isBegin;
     private boolean isRecording;
+    private JButton uploadButton;
     public Client(String ip, int port) throws IOException {
         connectToServer(ip, port);
     }
@@ -27,13 +31,20 @@ public class Client {
         loginFrame = new JFrame("Login");
         loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         loginFrame.setSize(300, 150);
-        loginFrame.setLayout(new GridLayout(3, 2));
-        isRecording=false;
-        JLabel usernameLabel = new JLabel("Username:");
+        loginFrame.setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2));
+        JLabel usernameLabel = new JLabel("             Username:");
         usernameField = new JTextField();
-        JLabel passwordLabel = new JLabel("Password:");
+        JLabel passwordLabel = new JLabel("             Password:");
         passwordField = new JPasswordField();
 
+        inputPanel.add(usernameLabel);
+        inputPanel.add(usernameField);
+        inputPanel.add(passwordLabel);
+        inputPanel.add(passwordField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton loginButton = new JButton("Login");
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -43,12 +54,13 @@ public class Client {
                 out.println(password);
             }
         });
+        buttonPanel.add(loginButton);
 
-        loginFrame.add(usernameLabel);
-        loginFrame.add(usernameField);
-        loginFrame.add(passwordLabel);
-        loginFrame.add(passwordField);
-        loginFrame.add(loginButton);
+        statusLabel = new JLabel("", JLabel.CENTER);
+
+        loginFrame.add(inputPanel, BorderLayout.CENTER);
+        loginFrame.add(buttonPanel, BorderLayout.SOUTH);
+        loginFrame.add(statusLabel, BorderLayout.NORTH);
 
         loginFrame.setLocationRelativeTo(null); // 将窗口居中显示
     }
@@ -68,8 +80,10 @@ public class Client {
 
         if (response.equals("Authentication successful")) {
             loginFrame.dispose();
+            createAndShowGUI();
+        } else {
+            usernameField.setText("用户名或密码错误!");
         }
-        createAndShowGUI();
 
     }
     private void createAndShowGUI() {
@@ -77,6 +91,8 @@ public class Client {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(400, 300);
         audiocount=0;
+        isLoading=false;
+        isBegin=true;
         messageArea = new JTextArea();
         messageArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(messageArea);
@@ -122,15 +138,30 @@ public class Client {
         inputPanel.add(inputField, BorderLayout.CENTER);
 
         // 创建上传文件按钮
-        JButton uploadButton = new JButton("Upload File");
+        uploadButton = new JButton("Upload File");
         uploadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-                int result = fileChooser.showOpenDialog(frame);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    // 处理上传文件的逻辑
-                    sendFile(selectedFile);
+                if(isBegin) {
+                    JFileChooser fileChooser = new JFileChooser();
+                    int result = fileChooser.showOpenDialog(frame);
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        File selectedFile = fileChooser.getSelectedFile();
+                        // 处理上传文件的逻辑
+                        uploadButton.setText("Stop");
+                        isLoading = true;
+                        isBegin = false;
+                        new Thread(() -> {
+                            sendFile(selectedFile);
+                        }).start();
+                    }
+                }else {
+                    if(isLoading) {
+                        uploadButton.setText("Continue");
+                        isLoading = false;
+                    }else{
+                        uploadButton.setText("Stop");
+                        isLoading = true;
+                    }
                 }
             }
         });
@@ -288,21 +319,47 @@ public class Client {
             out.println("File:" + file.getName()+":"+file.length());
             out.flush();
 
+            int p=0;
             // 发送文件内容
             OutputStream os = socket.getOutputStream();
-            os.write(buffer, 0, buffer.length);
-            os.flush();
+            int bytesSent = 0;
+            while (bytesSent < buffer.length) {
+                if (isLoading) {
+                    int remaining = buffer.length - bytesSent;
+                    int bytesToSend = Math.min(remaining, 8192);
+                    os.write(buffer, bytesSent, bytesToSend);
+                    os.flush();
+                    bytesSent += bytesToSend;
+
+                    // 更新图形界面显示
+                    final int progress = (int) ((double) bytesSent / buffer.length * 100);
+                    if(progress ==p) {
+                        p+=5;
+                        SwingUtilities.invokeLater(() -> {
+                            messageArea.append("Sending: " + progress + "%\n");
+                        });
+                    }
+                } else {
+                    // 如果暂停发送，等待一段时间再继续
+                    Thread.sleep(1000);
+                }
+            }
 
             // 关闭流
             fis.close();
             bis.close();
 
+            isBegin=true;
+            isLoading=false;
+            uploadButton.setText("Upload File");
             // 在图形界面中显示文件传输信息
             SwingUtilities.invokeLater(() -> {
-                messageArea.append("File sent: " + file.getName() + file.length()+ "\n\n");
+                messageArea.append("File sent: " + file.getName() + "---" +file.length()+ "\n\n");
             });
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
     private void receiveFile(String fileName,long filesize) {
@@ -321,7 +378,7 @@ public class Client {
                 bos.flush();
                 if(bytesRead != 8192) break;
             }
-
+            bos.flush();
             // 关闭流
             bos.close();
             fos.close();
@@ -330,7 +387,7 @@ public class Client {
 
             // 在图形界面中显示文件接收信息
             SwingUtilities.invokeLater(() -> {
-                messageArea.append("File received: " + fileName +"---"+ receivedFile.length()+"\n");
+                messageArea.append("File received: " + fileName +"\n");
                 messageArea.append("File saved to :" + filePath + "\n\n");
             });
         } catch (IOException e) {
