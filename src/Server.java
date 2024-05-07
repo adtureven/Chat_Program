@@ -232,14 +232,14 @@ public class Server {
         private boolean authenticateUser(String username, String password) {
             // 在实际情况下，你需要在这里编写验证用户信息的逻辑
             // 这里只是一个简单的示例，始终返回true，表示认证成功
-//            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
-//                    return true;
-//            }
-//            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
-//                return true;
-//            }
-//            return false;
-            return true;
+            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
+                    return true;
+            }
+            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
+                return true;
+            }
+            return false;
+            //return true;
         }
         private void sendMessage(String message) {
             out.println("Text:"+message);

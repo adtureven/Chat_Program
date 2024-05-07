@@ -1,7 +1,18 @@
-A Chat_Program coding with Java:
-1) 功能类似于 QQ 的简单聊天程序，具有图形界面；具体的通信模式
-是单纯的客户机/服务器（C/S）模式，基于 TCP 实现。
-2) 基本功能包括： A. 验证用户登录；B. 两个用户的文字聊天；C. 用户之
-间传输文件，包括二进制的大文件（比如 100MB）。
-3) 高级功能包括：A. 支持 NAT 穿透(unfinished)； B. 离线文件和断点续传的支持； C. 
-语音聊天。
+## Getting Started
+
+Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+
+## Folder Structure
+
+The workspace contains two folders by default, where:
+
+- `src`: the folder to maintain sources
+- `lib`: the folder to maintain dependencies
+
+Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+
+> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+
+## Dependency Management
+
+The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
