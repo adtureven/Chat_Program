@@ -345,6 +345,12 @@ public class Client {
                 }
             }
 
+//            byte specialSymbol = '$';
+//            byte[] endMarker = new byte[1024];
+//            Arrays.fill(endMarker, (byte) specialSymbol); // 填充1024个特殊符号
+//            os.write(endMarker);
+//            os.flush();
+
             // 关闭流
             fis.close();
             bis.close();
@@ -371,12 +377,26 @@ public class Client {
 
             // 从输入流中读取文件内容
             InputStream inputStream = socket.getInputStream();
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[1024];
             int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
+            //int flag=0;
+//            byte specialSymbol = '$';
+//            byte[] endMarker = new byte[1024];
+//            Arrays.fill(endMarker, (byte) specialSymbol);
+
+            while (true) {
+                bytesRead = inputStream.read(buffer);
+                //byte specialSymbol = '$'; // 设置特殊符号
+//                for (byte b : buffer) {
+//                    if (b == specialSymbol) {
+//                        flag = 1;
+//                    } else break;
+//                }
+//                if (flag == 1) break;
+                //if(endMarker==buffer) break;
                 bos.write(buffer, 0, bytesRead);
                 bos.flush();
-                if(bytesRead != 8192) break;
+                if(bytesRead != 1024) break;
             }
             bos.flush();
             // 关闭流

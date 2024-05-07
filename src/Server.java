@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -145,19 +146,33 @@ public class Server {
                 // 从输入流中读取文件内容
                 InputStream inputStream = clientSocket.getInputStream();
 
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[1024];
                 int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                //int flag=0;
+                byte specialSymbol = '$';
+                byte[] endMarker = new byte[1024];
+                Arrays.fill(endMarker, (byte) specialSymbol);
+                while (true) {
+                    bytesRead = inputStream.read(buffer);
+                    //byte specialSymbol = '$'; // 设置特殊符号
+//                    for (byte b : buffer) {
+//                        if (b == specialSymbol) {
+//                            flag = 1;
+//                        } else break;
+//                    }
+//                    if (flag == 1) break;
+                    //if(buffer==endMarker) break;
                     bos.write(buffer, 0, bytesRead);
                     bos.flush();
-                    if(bytesRead != 8192) break;
+                    System.out.println(bytesRead);
+                    if(bytesRead != 1024) break;
                 }
                 // 关闭流
                 bos.close();
                 fos.close();
 
                 // 在服务端显示文件接收信息
-                System.out.println("File received: " + fileName);
+                System.out.println("File received: " + fileName+" " +receivedFile.length());
 
                 // 转发文件给其他客户端
                 broadcastFile(receivedFile);
@@ -198,6 +213,12 @@ public class Server {
                 outputStream.write(fileData, 0, fileData.length);
                 outputStream.flush();
 
+//                byte specialSymbol = '$';
+//                byte[] endMarker = new byte[1024];
+//                Arrays.fill(endMarker, (byte) specialSymbol); // 填充1024个特殊符号
+//                outputStream.write(endMarker);
+//                outputStream.flush();
+
                 System.out.println("send File:" + fileName);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -212,14 +233,14 @@ public class Server {
         private boolean authenticateUser(String username, String password) {
             // 在实际情况下，你需要在这里编写验证用户信息的逻辑
             // 这里只是一个简单的示例，始终返回true，表示认证成功
-            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
-                    return true;
-            }
-            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
-                return true;
-            }
-            return false;
-            //return true;
+//            if(Objects.equals(username, "user1") && Objects.equals(password, "123456")){
+//                    return true;
+//            }
+//            if(Objects.equals(username, "user2") && Objects.equals(password, "123")){
+//                return true;
+//            }
+//            return false;
+            return true;
         }
         private void sendMessage(String message) {
             out.println("Text:"+message);
@@ -228,6 +249,6 @@ public class Server {
 
     public static void main(String[] args) throws IOException {
         Server server = new Server();
-        server.start(12345);
+        server.start(3389);
     }
 }
