@@ -93,32 +93,38 @@ public class Server {
                         System.out.println("File:" + fileName + fileSize);
                         receiveFile(fileName,fileSize);
                     } else if (message.startsWith("Audio:")) {
-                        String audioname = message.substring(5);
-                        System.out.println("Audio from client..");
-                        receiveAudio(audioname);
+                        String[] parts = message.split(":");
+                        String audioname = parts[1];
+                        long fileSize = Long.parseLong(parts[2]);
+                        System.out.println("Audio from client.."+fileSize);
+                        receiveAudio(audioname,fileSize);
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        private void receiveAudio(String audioname) throws IOException {
+        private void receiveAudio(String audioname,long filesize) throws IOException {
             // 创建输入流，用于接收客户端发送的音频数据
             InputStream inputStream = clientSocket.getInputStream();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[1460];
             int bytesRead;
-            int flag=0;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
+            //int flag=0;
+            while (true) {
                 // 将音频数据写入文件
+                bytesRead = inputStream.read(buffer);
                 outputStream.write(buffer, 0, bytesRead);
-                byte specialSymbol = '$'; // 设置特殊符号
-                for (byte b : buffer) {
-                    if (b == specialSymbol) {
-                        flag = 1;
-                    } else break;
-                }
-                if (flag == 1) break;
+//                byte specialSymbol = '$'; // 设置特殊符号
+//                for (byte b : buffer) {
+//                    if (b == specialSymbol) {
+//                        flag = 1;
+//                    } else break;
+//                }
+//                if (flag == 1) break;
+                filesize-=bytesRead;
+                System.out.println(filesize);
+                if(filesize<=0) break;
             }
             for (ClientHandler client : clients) {
                 if (client != this) { // 不转发给当前客户端
@@ -127,7 +133,7 @@ public class Server {
             }
         }
         private void sendAudio(String audioname,ByteArrayOutputStream output) throws IOException {
-            out.println("Audio:"+audioname);
+            out.println("Audio:"+audioname+":"+output.size());
             out.flush();
 
             OutputStream outputStream = clientSocket.getOutputStream();
@@ -146,26 +152,19 @@ public class Server {
                 // 从输入流中读取文件内容
                 InputStream inputStream = clientSocket.getInputStream();
 
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[1460];
                 int bytesRead;
                 //int flag=0;
                 byte specialSymbol = '$';
-                byte[] endMarker = new byte[1024];
+                byte[] endMarker = new byte[1460];
                 Arrays.fill(endMarker, (byte) specialSymbol);
                 while (true) {
                     bytesRead = inputStream.read(buffer);
-                    //byte specialSymbol = '$'; // 设置特殊符号
-//                    for (byte b : buffer) {
-//                        if (b == specialSymbol) {
-//                            flag = 1;
-//                        } else break;
-//                    }
-//                    if (flag == 1) break;
-                    //if(buffer==endMarker) break;
                     bos.write(buffer, 0, bytesRead);
                     bos.flush();
-                    System.out.println(bytesRead);
-                    if(bytesRead != 1024) break;
+                    //System.out.println(filesize);
+                    filesize-=bytesRead;
+                    if(filesize<=0) break;
                 }
                 // 关闭流
                 bos.close();

@@ -195,30 +195,30 @@ public class Client {
             TargetDataLine line = AudioSystem.getTargetDataLine(format);
             line.open(format);
             line.start();
-            out.println("Audio:"+ audiocount);
-            out.flush();
+//            out.println("Audio:"+ audiocount);
+//            out.flush();
             audiocount+=1;
             System.out.println("Audio:"+ audiocount);
             // 创建输出流，用于发送音频数据
             OutputStream outputStream = socket.getOutputStream();
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
             isRecording=true;
             // 创建线程用于录制音频并发送
             Thread recordingThread = new Thread(() -> {
                 try {
                     System.out.println("Start recording...");
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[1460];
                     int bytesRead;
                     while (isRecording && (bytesRead = line.read(buffer, 0, buffer.length)) != -1) {
                         // 将音频数据发送到服务器
-                        outputStream.write(buffer, 0, bytesRead);
-                        outputStream.flush();
+                        os.write(buffer, 0, bytesRead);
+                        //os.flush();
                         System.out.println(bytesRead);
                     }
+                    out.println("Audio:"+audiocount+":"+os.size());
+                    out.flush();
 
-                    byte specialSymbol = '$';
-                    byte[] endMarker = new byte[1024];
-                    Arrays.fill(endMarker, (byte) specialSymbol); // 填充1024个特殊符号
-                    outputStream.write(endMarker);
+                    outputStream.write(os.toByteArray());
                     outputStream.flush();
 
                 } catch (IOException e) {
@@ -255,23 +255,25 @@ public class Client {
                 //String fileName = message.substring(5);
                 receiveFile(fileName,fileSize);
             } else if(message.startsWith("Audio:")) {
-                String audioname = message.substring(5);
+                String[] parts = message.split(":");
+                String audioname = parts[1];
+                long fileSize = Long.parseLong(parts[2]);
                 SwingUtilities.invokeLater(() -> {
                     messageArea.append("You received a Voice Chat...\n\n");
                 });
-                receiveAudio(audioname);
+                receiveAudio(audioname,fileSize);
             }
             // 处理逻辑..
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    private void receiveAudio(String audioname){
+    private void receiveAudio(String audioname,long filesize){
         try {
             InputStream inputStream = socket.getInputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[1460];
             int bytesRead;
-            int flag = 0;
+            //int flag = 0;
             AudioFormat format = new AudioFormat(16000, 16, 1, true, false);
 
             // 获取音频输出设备
@@ -285,14 +287,16 @@ public class Client {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 // 处理接收到的音频数据，例如播放音频
                 // 这里假设你有一个播放音频的函数 playAudio(byte[] audioData, int length)
-                byte specialSymbol = '$'; // 设置特殊符号
-                for (byte b : buffer) {
-                    if (b == specialSymbol) {
-                        flag = 1;
-                    } else break;
-                }
-                if (flag == 1) break;
+//                byte specialSymbol = '$'; // 设置特殊符号
+//                for (byte b : buffer) {
+//                    if (b == specialSymbol) {
+//                        flag = 1;
+//                    } else break;
+//                }
+//                if (flag == 1) break;
                 line.write(buffer, 0, bytesRead);
+                filesize-=bytesRead;
+                if(filesize<=0) break;
                 //System.out.println("going...");
                 //System.out.println(bytesRead);
             }
@@ -326,7 +330,7 @@ public class Client {
             while (bytesSent < buffer.length) {
                 if (isLoading) {
                     int remaining = buffer.length - bytesSent;
-                    int bytesToSend = Math.min(remaining, 8192);
+                    int bytesToSend = Math.min(remaining, 1460);
                     os.write(buffer, bytesSent, bytesToSend);
                     os.flush();
                     bytesSent += bytesToSend;
@@ -345,11 +349,6 @@ public class Client {
                 }
             }
 
-//            byte specialSymbol = '$';
-//            byte[] endMarker = new byte[1024];
-//            Arrays.fill(endMarker, (byte) specialSymbol); // 填充1024个特殊符号
-//            os.write(endMarker);
-//            os.flush();
 
             // 关闭流
             fis.close();
@@ -377,26 +376,17 @@ public class Client {
 
             // 从输入流中读取文件内容
             InputStream inputStream = socket.getInputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[1460];
             int bytesRead;
-            //int flag=0;
-//            byte specialSymbol = '$';
-//            byte[] endMarker = new byte[1024];
-//            Arrays.fill(endMarker, (byte) specialSymbol);
+
 
             while (true) {
                 bytesRead = inputStream.read(buffer);
-                //byte specialSymbol = '$'; // 设置特殊符号
-//                for (byte b : buffer) {
-//                    if (b == specialSymbol) {
-//                        flag = 1;
-//                    } else break;
-//                }
-//                if (flag == 1) break;
-                //if(endMarker==buffer) break;
+
                 bos.write(buffer, 0, bytesRead);
                 bos.flush();
-                if(bytesRead != 1024) break;
+                filesize-=bytesRead;
+                if(filesize<=0) break;
             }
             bos.flush();
             // 关闭流
